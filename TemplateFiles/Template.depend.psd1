@@ -1,0 +1,5 @@
+@{
+    PSDependOptions = @{
+        Target = ".\Source\modules"
+    }
+}

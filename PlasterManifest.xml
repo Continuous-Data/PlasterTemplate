@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<plasterManifest
+  schemaVersion="1.1"
+  templateType="Project" xmlns="http://www.microsoft.com/schemas/PowerShell/Plaster/v1">
+  <metadata>
+    <name>ScriptModuleTemplate</name>
+    <id>3c3e8e3c-8f7b-445d-8b69-f0d86274dc43</id>
+    <version>1.0.0</version>
+    <title>ScriptModuleTemplate</title>
+    <description>Scaffolds the files required for a PowerShell script module</description>
+    <author>DLL</author>
+    <tags>PowerShell, Module, ModuleManifest</tags>
+  </metadata>
+  <parameters>
+    <parameter name='Name' type='text' prompt='Name of the module' default='empty' />
+    <parameter name='Description' type='text' prompt='Description of the module to create' default=' ' />
+    <parameter name='Version' type='text' prompt='Initial Version of the new module' default='0.0.1' />
+    <parameter name='PowershellVersion' type='text' prompt='Description of the PowerShell Version to use on the new module' default='5.1' />
+    <parameter name='Author' type='text' prompt='Name of the author' default='Systems Team' />
+    <parameter name='CompanyName' type='text' prompt='Name of the Company' default='DLL' />
+  </parameters>
+  <content>
+    <message>
+    Creating Folder Structure and HelperModules
+    </message>
+    <file source='TemplateFolders\**'
+          destination='' />
+    <message>
+    Copying Important Helper Files Files
+    </message>
+
+    <file source='TemplateFiles\build.ps1'
+          destination='build.ps1' />
+    <modify path='build.ps1' encoding='UTF8'>
+      <replace>
+            <original>TemplateName</original>
+              <substitute expand='true'>$PLASTER_PARAM_Name</substitute>
+      </replace>
+    </modify>
+    
+    <file source='TemplateFiles\Template.build.ps1'
+          destination='${PLASTER_PARAM_Name}.build.ps1' />
+    <modify path='${PLASTER_PARAM_Name}.build.ps1' encoding='UTF8'>
+      <replace>
+            <original>TemplateName</original>
+              <substitute expand='true'>$PLASTER_PARAM_Name</substitute>
+      </replace>
+      <replace>
+            <original>TemplateAuthor</original>
+              <substitute expand='true'>$PLASTER_PARAM_Author</substitute>
+      </replace>
+      <replace>
+            <original>TemplateCompany</original>
+              <substitute expand='true'>$PLASTER_PARAM_CompanyName</substitute>
+      </replace>
+    </modify>
+
+    <file source='TemplateFiles\Template.PSDeploy.ps1'
+          destination='${PLASTER_PARAM_Name}.PSDeploy.ps1' />
+    <modify path='${PLASTER_PARAM_Name}.PSDeploy.ps1' encoding='UTF8'>
+      <replace>
+            <original>TemplateName</original>
+              <substitute expand='true'>$PLASTER_PARAM_Name</substitute>
+      </replace>
+    </modify>
+
+    <file source='TemplateFiles\Template.depend.psd1'
+          destination='${PLASTER_PARAM_Name}.depend.psd1' />
+    
+    <file source='TemplateFiles\.gitignore'
+          destination='.gitignore' />
+
+    <message>
+    Copying Dummy Files
+    </message>
+
+    <file source='TemplateFiles\Template.Tests.ps1'
+          destination='Tests\Unit\${PLASTER_PARAM_Name}.Tests.ps1' />
+
+    <file source='TemplateFiles\Template.DummyFunction.ps1'
+          destination='Source\Public\Get-DummyFunction.ps1' />
+
+    <message>
+      Creating Module Manifest
+    </message>
+
+    <newModuleManifest
+      destination='${PLASTER_PARAM_Name}.psd1'
+      moduleVersion='$PLASTER_PARAM_Version'
+      rootModule='${PLASTER_PARAM_Name}.psm1'
+      author='$PLASTER_PARAM_CompanyName - $PLASTER_PARAM_Author'
+      companyName='$PLASTER_PARAM_CompanyName'
+      description='$PLASTER_PARAM_Description'
+      powerShellVersion='$PLASTER_PARAM_PowerShellVersion'
+      encoding='UTF8-NoBOM'/>
+  </content>
+</plasterManifest>

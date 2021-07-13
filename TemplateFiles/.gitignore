@@ -1,0 +1,8 @@
+
+BuildOutput/
+
+HelperModules/
+
+Test-results.xml
+
+.vscode/settings.json
