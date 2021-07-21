@@ -213,6 +213,7 @@ Task CreateUpdateDocsMarkdown {
 task BuildModule {
     $pubFiles = Get-ChildItem "$Source\public" -Filter *.ps1 -File
     $privFiles = Get-ChildItem "$Source\private" -Filter *.ps1 -File
+    $AdditionalSourceFolders = @('bin','lib','modules')
     [array]$allfiles = $pubFiles
     [array]$allfiles += $privFiles
 
@@ -220,15 +221,20 @@ task BuildModule {
         New-Item $destination -ItemType Directory
     }
 
+    Write-Host "Starting Module Build"
+    Write-Host "Checking function / Naming Convention integrity"
+    
     if (!($allfiles -eq $null)) {
-        ForEach($file in $allfiles) {
-            Get-Content $file.FullName | Out-File "$destination\$moduleName.psm1" -Append -Encoding utf8
-        }
+        $regex = '(^function\s*)(\S*)(\s*{?)'
+        [array]$functionnames = @()
 
-        if ((Get-ChildItem "$destination\$moduleName.psm1")) {
-            $psmfile = Get-Content "$destination\$moduleName.psm1"
-            $regex = '(^function\s*)(\S*)(\s*{?)'
-            $MatchedRegex = [regex]::Matches($psmfile,$regex)
+        ForEach($file in $allfiles) {
+            [array]$MatchedRegex = @()
+            $file = Get-Content $file.FullName 
+            $file | Out-File "$destination\$moduleName.psm1" -Append -Encoding utf8
+            $file | ForEach-Object{
+                $MatchedRegex += [regex]::Matches($_,$regex)   
+            }
             $MatchedRegex | ForEach-Object{
                 [array]$functionnames += $_.groups[2].value
             }
@@ -246,9 +252,12 @@ task BuildModule {
                 Write-Host "Filenames:"
                 $allfiles.Name | Format-Table
                 Write-Error "BUILD FAILED. Cannot Continue if files and functions do not match"
+            }else{
+                Write-Host "function / Naming Convention integrity successfull. PSM1 has been built"
             }
         }
-    
+        
+        Write-Host "Copying and updating PSD1 file"
         if($pubfiles){
             $functionstoexport = $pubFiles.BaseName
         }else{
@@ -266,6 +275,15 @@ task BuildModule {
         }
         
         Update-ModuleManifest @moduleManifestData
+
+        Write-Host "Copying non-empty folders in Source to buildoutput"
+        $AdditionalSourceFolders | ForEach-Object{
+            $foldertocheck = "$source\$_"
+            if ((Get-ChildItem $foldertocheck)) {
+                Copy-Item -Path $foldertocheck -Destination $Destination -Recurse -Force
+            }
+        }
+        
     }else{
         Write-Error "No Function Files! Nothing to build!"
     }
