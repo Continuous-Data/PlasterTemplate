@@ -12,7 +12,7 @@
     <tags>PowerShell, Module, ModuleManifest</tags>
   </metadata>
   <parameters>
-    <parameter name='Name' type='text' prompt='Name of the module' default='empty' />
+    <parameter name='Name' type='text' prompt='Name of the module' default='DemoModule' />
     <parameter name='Description' type='text' prompt='Description of the module to create' default=' ' />
     <parameter name='Version' type='text' prompt='Initial Version of the new module' default='0.0.1' />
     <parameter name='PowershellVersion' type='text' prompt='Description of the PowerShell Version to use on the new module' default='5.1' />
