@@ -326,14 +326,20 @@ task CreateUpdatePesterTests {
         foreach ($file in $allfiles) {
             $parentfolder = Join-Path $script:TestRoot ($file.DirectoryName | Split-Path -Leaf)
             $filename = "$($file.BaseName).Tests.ps1"
-            CreatePesterTestFile -Filename $filename -rootfolder $parentfolder
+            if (!(Test-path $filename)) {
+                CreatePesterTestFile -Filename $filename -rootfolder $parentfolder
+            }  
         }
     }
 
     if (!($testfiles -eq $null)) {
         foreach ($file in $testfiles) {
-            if ($file.basename -notin $allfiles.basename) {
-                Rename-Item $file.FullName "$($file.basename).FileOrFunctionRemoved.ps1" -Force
+            $cleanfunctionfilename = $file.BaseName -replace '\.Tests',''
+            if ($cleanfunctionfilename -notin $allfiles.basename) {
+                if (!(Test-Path "$($file.basename).FileOrFunctionRemoved.ps1")) {
+                    Rename-Item $file.FullName "$($file.basename).FileOrFunctionRemoved.ps1" -Force
+                }
+                
             }
         }
     }
