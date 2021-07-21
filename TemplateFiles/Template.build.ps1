@@ -13,13 +13,14 @@ $script:ModulePath = "$Destination\$ModuleName.psm1"
 $script:ManifestPath = "$Destination\$ModuleName.psd1"
 $script:Imports = ( 'Private','Public' ) #not used. check if we can use
 
-task Default Clean, BuildModule, AnalyzeErrors, CreateUpdatePesterTests, Pester, CreateUpdateExportDocs
+task Default Clean, BuildModule, AnalyzeErrors, ResolveDependencies, CreateUpdatePesterTests, Pester, CreateUpdateExportDocs
 task CreateUpdateExportDocs CreateUpdateDocs, ExportDocs
 task Pester {ImportModule}, Test, {uninstall}
 Task CreateUpdateDocs {ImportModule}, CreateUpdateDocsMarkdown, {uninstall}
+Task ResolveDependencies DownloadDependencies, ImportDependencies
 
-task CICD Clean, BuildModule, AnalyzeErrors, Pester, UpdateVersion, ExportDocs, {Uninstall}
-task CICDSctrict Clean, BuildModule, Analyze, Pester, UpdateVersion, ExportDocs, {Uninstall}
+task CICD Clean, BuildModule, AnalyzeErrors, ResolveDependencies, Pester, UpdateVersion, ExportDocs, {Uninstall}
+task CICDSctrict Clean, BuildModule, Analyze, ResolveDependencies, Pester, UpdateVersion, ExportDocs, {Uninstall}
 
 Task Clean {
     If(Get-Module $moduleName){
@@ -343,5 +344,13 @@ task CreateUpdatePesterTests {
             }
         }
     }
+
+}
+
+task DownloadDependencies{
+
+}
+
+task ImportDependencies{
 
 }
