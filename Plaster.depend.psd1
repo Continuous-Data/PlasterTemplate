@@ -9,5 +9,5 @@
     'PSScriptAnalyzer' = 'latest'
     'PSDeploy' = 'latest'
     'PlatyPS' = 'latest'
-    'PSDepends' = 'latest'
+    'PSDepend' = 'latest'
 }
