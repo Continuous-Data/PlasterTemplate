@@ -7,7 +7,7 @@ $script:Source = Join-Path $BuildRoot Source
 
 $script:Output = Join-Path $BuildRoot BuildOutput
 $script:DocPath =  Join-Path $BuildRoot "docs\functions"
-$script:TestRoot = Join-Path $BuildRoot 'Tests\Unit'
+$script:TestRoot = Join-Path $BuildRoot 'Tests'
 $script:Destination = Join-Path $Output $ModuleName
 $script:ModulePath = "$Destination\$ModuleName.psm1"
 $script:ManifestPath = "$Destination\$ModuleName.psd1"
@@ -85,7 +85,7 @@ task CodeCoverage {
         assert($numberFails -eq 0) ('Failed "{0}" unit tests.' -f $numberFails)
         
     }else{
-        Write-Error "No *.Tests.ps1 files found in [$script:TestRoot]. Pester cannot run without it. Please create unit tests (or disable pester if you must)"
+        Write-Warning "No *.Tests.ps1 files found in [$script:TestRoot]. Pester cannot run without it. Please create unit tests (or disable pester if you must)"
     }
 
     
@@ -111,10 +111,8 @@ task Test {
         assert($numberFails -eq 0) ('Failed "{0}" unit tests.' -f $numberFails)
         
     }else{
-        Write-Error "No *.Tests.ps1 files found in [$script:TestRoot]. Pester cannot run without it. Please create unit tests (or disable pester if you must)"
+        Write-Warning "No *.Tests.ps1 files found in [$script:TestRoot]. Pester cannot run without it. Please create unit tests (or disable pester if you must)"
     }
-
-    
 }
 
 task UpdateVersion {
@@ -317,14 +315,15 @@ task CreateUpdatePesterTests {
 
     $pubFiles = Get-ChildItem "$Source\public" -Filter *.ps1 -File
     $privFiles = Get-ChildItem "$Source\private" -Filter *.ps1 -File
-    $testfiles = Get-ChildItem $script:TestRoot -Filter *.Tests.ps1 -file -Recurse
+    $testfilespath = Join-Path $script:TestRoot "Unit"
+    $testfiles = Get-ChildItem "$testpath" -Filter *.Tests.ps1 -file -Recurse
 
     [array]$allfiles = $pubFiles
     [array]$allfiles += $privFiles
 
     if (!($allfiles -eq $null)) {
         foreach ($file in $allfiles) {
-            $parentfolder = Join-Path $script:TestRoot ($file.DirectoryName | Split-Path -Leaf)
+            $parentfolder = Join-Path $testfilespath ($file.FullName | Split-Path -Leaf)
             $filename = "$($file.BaseName).Tests.ps1"
             if (!(Test-path $filename)) {
                 CreatePesterTestFile -Filename $filename -rootfolder $parentfolder
@@ -336,8 +335,9 @@ task CreateUpdatePesterTests {
         foreach ($file in $testfiles) {
             $cleanfunctionfilename = $file.BaseName -replace '\.Tests',''
             if ($cleanfunctionfilename -notin $allfiles.basename) {
-                if (!(Test-Path "$($file.basename).FileOrFunctionRemoved.ps1")) {
-                    Rename-Item $file.FullName "$($file.basename).FileOrFunctionRemoved.ps1" -Force
+                $newfilename = $file.FullName -replace '\.ps1','.FileOrFunctionRemoved.ps1'
+                if (!(Test-Path $newfilename)) {
+                    Rename-Item $file.FullName $newfilename -Force
                 }
                 
             }
