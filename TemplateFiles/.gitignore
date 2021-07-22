@@ -1,7 +1,9 @@
 
 BuildOutput/
 
-HelperModules/
+HelperModules/**
+!HelperModules/TemplateName.BootStrapDependencies.ps1
+!HelperModules/HelperModules.depend.psd1
 
 Test-results.xml
 

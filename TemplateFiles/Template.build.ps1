@@ -13,6 +13,10 @@ $script:ModulePath = "$Destination\$ModuleName.psm1"
 $script:ManifestPath = "$Destination\$ModuleName.psd1"
 $script:Imports = ( 'Private','Public' ) #not used. check if we can use
 
+# importing Dependency bootstrapper
+
+. "$BuildRoot\Helpermodules\$script:ModuleName.BootStrapDependencies.ps1"
+
 task Default Clean, BuildModule, AnalyzeErrors, ResolveDependencies, CreateUpdatePesterTests, Pester, CreateUpdateExportDocs
 task CreateUpdateExportDocs CreateUpdateDocs, ExportDocs
 task Pester {ImportModule}, Test, {uninstall}
@@ -349,8 +353,10 @@ task CreateUpdatePesterTests {
 
 task DownloadDependencies{
 
+    Resolve-Dependencies -path "$BuildRoot\$script:ModuleName.depend.psd1"
+
 }
 
 task ImportDependencies{
-
+    Import-Dependencies -path "$BuildRoot\$script:ModuleName.depend.psd1"
 }

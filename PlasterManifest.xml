@@ -67,8 +67,29 @@
     <file source='TemplateFiles\Template.depend.psd1'
           destination='${PLASTER_PARAM_Name}.depend.psd1' />
     
+    <file source='TemplateFiles\HelperModules.depend.psd1'
+          destination='HelperModules\HelperModules.depend.psd1' />
+
+    <file source='TemplateFiles\Template.BootStrapDependencies.ps1'
+          destination='HelperModules\${PLASTER_PARAM_Name}.BootStrapDependencies.ps1' />
+
+     <file source='TemplateFiles\InitializeBuildDependencies.ps1'
+          destination='InitializeBuildDependencies.ps1' />
+     <modify path='InitializeBuildDependencies.ps1' encoding='UTF8'>
+      <replace>
+            <original>TemplateName</original>
+              <substitute expand='true'>$PLASTER_PARAM_Name</substitute>
+      </replace>
+    </modify>     
+    
     <file source='TemplateFiles\.gitignore'
           destination='.gitignore' />
+    <modify path='.gitignore' encoding='UTF8'>
+      <replace>
+            <original>TemplateName</original>
+              <substitute expand='true'>$PLASTER_PARAM_Name</substitute>
+      </replace>
+    </modify> 
 
     <message>
     Copying Dummy Files

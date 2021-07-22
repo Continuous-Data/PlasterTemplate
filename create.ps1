@@ -1,12 +1,12 @@
-
-
-$DependentModules=@('PSDepend', 'Plaster')
-
 $TargetDirectory = 'C:\testoutput\test'
 
 $templatefolder = "$psscriptroot\TemplateFolders"
 
-$Helpermodulesfolder = "$psscriptroot\TemplateFolders\Helpermodules\"
+$Helpermodulesfolder = "$PSScriptRoot\TemplateFolders\Helpermodules\"
+
+. "$PSScriptRoot\TemplateFiles\Template.BootStrapDependencies.ps1"
+
+Get-DependentModule -modulename 'Plaster' -downloadpath "$PSScriptRoot\TempModuleDownloadFolder"
 
 #### Bootstrap required modules for creating the scaffold
 Foreach ($Module in $DependentModules){
@@ -30,9 +30,7 @@ if ((Get-ChildItem $Helpermodulesfolder -Recurse)) {
     Remove-Item "$Helpermodulesfolder\*" -Recurse -Force | Out-Null
 }
 
-##### runPSDepend for getting required modules
 
-Invoke-PSDepend -path "$psscriptroot\Plaster.depend.psd1" -Install -Force -Verbose
 
 #####create scaffold
 Invoke-Plaster -TemplatePath . -DestinationPath $TargetDirectory -Verbose
@@ -43,7 +41,6 @@ if ((Get-ChildItem $Helpermodulesfolder -Recurse)) {
 }
 
 # add .keep files again to templatefolderstructure
-
 $templatefolders = Get-ChildItem $templatefolder -Directory -Recurse
 
 if ($templatefolders) {

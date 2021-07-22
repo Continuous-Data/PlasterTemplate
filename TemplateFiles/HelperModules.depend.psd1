@@ -1,6 +1,6 @@
 @{
     PSDependOptions = @{
-        Target = ".\TemplateFolders\Helpermodules\"
+        Target = ".\HelperModules"
     }
 
     'Pester' = 'latest'
