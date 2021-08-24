@@ -243,7 +243,7 @@ function New-Psmfile {
 
     begin{
         $regex = "(^$sourcecodetype\s*)(\S*)(\s*{?)"
-        [array]$functionnames = @()
+        [array]$Entitynames = @()
     }
     
     process{
