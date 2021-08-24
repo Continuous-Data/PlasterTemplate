@@ -225,6 +225,64 @@ Task CreateUpdateDocsMarkdown {
 
 }
 
+function New-Psmfile {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string][ValidateSet('function','class')]
+        $sourcecodetype,
+        # Parameter help description
+        [Parameter(Mandatory=$true)]
+        [array]
+        $Inputfiles,
+        # Parameter help description
+        [Parameter(Mandatory=$true)]
+        [string]
+        $destinationfile
+    )
+
+    begin{
+        $regex = "(^$sourcecodetype\s*)(\S*)(\s*{?)"
+        [array]$functionnames = @()
+    }
+    
+    process{
+        ForEach($file in $Inputfiles) {
+            [array]$MatchedRegex = @()
+            $file = Get-Content $file.FullName 
+            $file | Out-File "$destinationfile" -Append -Encoding utf8
+            $file | ForEach-Object{
+                $MatchedRegex += [regex]::Matches($_,$regex)   
+            }
+            $MatchedRegex | ForEach-Object{
+                [array]$Entitynames += $_.groups[2].value
+            }
+        }
+
+        if ($Entitynames.count -gt 0) {
+            $dif = Compare-Object -ReferenceObject $Inputfiles.BaseName -DifferenceObject $Entitynames -PassThru
+            if($dif){
+                Remove-Item $destinationfile -Force
+                
+                Write-Host "There is a discrepancy between filenames of functions and actual function names. These must be equal"
+                Write-Host "DIFF:"
+                $dif | Format-Table
+                Write-Host "FunctionNames:"
+                $Entitynames | Format-Table
+                Write-Host "Filenames:"
+                $Inputfiles.Name | Format-Table
+                Write-Error "BUILD FAILED. Cannot Continue if files and functions do not match"
+            }else{
+                Write-Host "function / Naming Convention integrity successfull. PSM1 has been built"
+            }
+        }
+    }
+
+    end{
+
+    }
+}
+
 task BuildModule {
     If(-not(Test-Path $Destination)){
         New-Item $destination -ItemType Directory
@@ -234,37 +292,10 @@ task BuildModule {
     Write-Host "Checking function / Naming Convention integrity"
     
     if (!($allfunctionfiles -eq $null)) {
-        $regex = '(^function\s*)(\S*)(\s*{?)'
-        [array]$functionnames = @()
-
-        ForEach($file in $allfunctionfiles) {
-            [array]$MatchedRegex = @()
-            $file = Get-Content $file.FullName 
-            $file | Out-File "$destination\$moduleName.psm1" -Append -Encoding utf8
-            $file | ForEach-Object{
-                $MatchedRegex += [regex]::Matches($_,$regex)   
-            }
-            $MatchedRegex | ForEach-Object{
-                [array]$functionnames += $_.groups[2].value
-            }
-        }
     
-        if ($Functionnames -and $allfunctionfiles) {
-            $dif = Compare-Object -ReferenceObject $allfunctionfiles.BaseName -DifferenceObject $functionnames -PassThru
-            if($dif){
-                
-                Write-Host "There is a discrepancy between filenames of functions and actual function names. These must be equal"
-                Write-Host "DIFF:"
-                $dif | Format-Table
-                Write-Host "FunctionNames:"
-                $functionnames | Format-Table
-                Write-Host "Filenames:"
-                $allfunctionfiles.Name | Format-Table
-                Write-Error "BUILD FAILED. Cannot Continue if files and functions do not match"
-            }else{
-                Write-Host "function / Naming Convention integrity successfull. PSM1 has been built"
-            }
-        }
+        Write-Host "adding functions to powershell module"
+
+        New-Psmfile -sourcecodetype 'function' -Inputfiles $allfunctionfiles -destinationfile "$destination\$moduleName.psm1"
         
         Write-Host "Copying and updating PSD1 file"
         if($publicfunctionfiles){
@@ -298,6 +329,7 @@ task BuildModule {
         Write-Error "No Function Files! Nothing to build!"
     }
 }
+
 
 function CreatePesterTestFile {
     param (
