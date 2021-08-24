@@ -96,10 +96,10 @@
     </message>
 
     <file source='TemplateFiles\Template.Tests.ps1'
-          destination='Tests\Unit\${PLASTER_PARAM_Name}.Tests.ps1' />
+          destination='Tests\Unit\functions\${PLASTER_PARAM_Name}.Tests.ps1' />
 
     <file source='TemplateFiles\Template.DummyFunction.ps1'
-          destination='Source\Public\Get-DummyFunction.ps1' />
+          destination='Source\functions\public\Get-DummyFunction.ps1' />
 
     <message>
       Creating Module Manifest

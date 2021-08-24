@@ -5,13 +5,25 @@ $Script:Author = 'TemplateAuthor'
 $Script:CompanyName = 'TemplateCompany'
 $script:Source = Join-Path $BuildRoot Source
 
-$script:Output = Join-Path $BuildRoot BuildOutput
-$script:DocPath =  Join-Path $BuildRoot "docs\functions"
+$script:FunctionSource = Join-Path $Source functions
+[array]$script:publicfunctionfiles = Get-ChildItem "$FunctionSource\public" -Filter *.ps1 -File
+[array]$script:privatefunctionfiles = Get-ChildItem "$FunctionSource\private" -Filter *.ps1 -File
+[array]$script:allfunctionfiles += $script:publicfunctionfiles + $script:privatefunctionfiles
+
+$script:ClassSource = Join-Path $Source classes
+
 $script:TestRoot = Join-Path $BuildRoot 'Tests'
+$script:UnitTestPath = Join-Path $script:TestRoot "Unit" 
+$script:FunctionTestsPath = Join-Path $script:UnitTestPath 'functions'
+$script:FunctionTestFiles = Get-ChildItem $script:FunctionTestsPath -Filter *.Tests.ps1 -file -Recurse
+
+$script:DocPath =  Join-Path $BuildRoot "docs\functions"
+
+$script:Output = Join-Path $BuildRoot BuildOutput
 $script:Destination = Join-Path $Output $ModuleName
 $script:ModulePath = "$Destination\$ModuleName.psm1"
 $script:ManifestPath = "$Destination\$ModuleName.psd1"
-$script:Imports = ( 'Private','Public' ) #not used. check if we can use
+#$script:Imports = ( 'Private','Public' ) #not used. check if we can use
 
 # importing Dependency bootstrapper
 
@@ -214,12 +226,6 @@ Task CreateUpdateDocsMarkdown {
 }
 
 task BuildModule {
-    $pubFiles = Get-ChildItem "$Source\public" -Filter *.ps1 -File
-    $privFiles = Get-ChildItem "$Source\private" -Filter *.ps1 -File
-    $AdditionalSourceFolders = @('bin','lib','modules')
-    [array]$allfiles = $pubFiles
-    [array]$allfiles += $privFiles
-
     If(-not(Test-Path $Destination)){
         New-Item $destination -ItemType Directory
     }
@@ -227,11 +233,11 @@ task BuildModule {
     Write-Host "Starting Module Build"
     Write-Host "Checking function / Naming Convention integrity"
     
-    if (!($allfiles -eq $null)) {
+    if (!($allfunctionfiles -eq $null)) {
         $regex = '(^function\s*)(\S*)(\s*{?)'
         [array]$functionnames = @()
 
-        ForEach($file in $allfiles) {
+        ForEach($file in $allfunctionfiles) {
             [array]$MatchedRegex = @()
             $file = Get-Content $file.FullName 
             $file | Out-File "$destination\$moduleName.psm1" -Append -Encoding utf8
@@ -243,8 +249,8 @@ task BuildModule {
             }
         }
     
-        if ($Functionnames -and $allfiles) {
-            $dif = Compare-Object -ReferenceObject $allfiles.BaseName -DifferenceObject $functionnames -PassThru
+        if ($Functionnames -and $allfunctionfiles) {
+            $dif = Compare-Object -ReferenceObject $allfunctionfiles.BaseName -DifferenceObject $functionnames -PassThru
             if($dif){
                 
                 Write-Host "There is a discrepancy between filenames of functions and actual function names. These must be equal"
@@ -253,7 +259,7 @@ task BuildModule {
                 Write-Host "FunctionNames:"
                 $functionnames | Format-Table
                 Write-Host "Filenames:"
-                $allfiles.Name | Format-Table
+                $allfunctionfiles.Name | Format-Table
                 Write-Error "BUILD FAILED. Cannot Continue if files and functions do not match"
             }else{
                 Write-Host "function / Naming Convention integrity successfull. PSM1 has been built"
@@ -261,8 +267,8 @@ task BuildModule {
         }
         
         Write-Host "Copying and updating PSD1 file"
-        if($pubfiles){
-            $functionstoexport = $pubFiles.BaseName
+        if($publicfunctionfiles){
+            $functionstoexport = $publicfunctionfiles.BaseName
         }else{
             $functionstoexport =  ' '
         }
@@ -280,8 +286,9 @@ task BuildModule {
         Update-ModuleManifest @moduleManifestData
 
         Write-Host "Copying non-empty folders in Source to buildoutput"
+        $AdditionalSourceFolders = Get-ChildItem $Source -Directory -Exclude @('functions','classes')
         $AdditionalSourceFolders | ForEach-Object{
-            $foldertocheck = "$source\$_"
+            $foldertocheck = "$_"
             if ((Get-ChildItem $foldertocheck)) {
                 Copy-Item -Path $foldertocheck -Destination $Destination -Recurse -Force
             }
@@ -318,17 +325,9 @@ function CreatePesterTestFile {
 
 task CreateUpdatePesterTests {
 
-    $pubFiles = Get-ChildItem "$Source\public" -Filter *.ps1 -File
-    $privFiles = Get-ChildItem "$Source\private" -Filter *.ps1 -File
-    $testfilespath = Join-Path $script:TestRoot "Unit"
-    $testfiles = Get-ChildItem "$testpath" -Filter *.Tests.ps1 -file -Recurse
-
-    [array]$allfiles = $pubFiles
-    [array]$allfiles += $privFiles
-
-    if (!($allfiles -eq $null)) {
-        foreach ($file in $allfiles) {
-            $parentfolder = Join-Path $testfilespath ($file.FullName | Split-Path -Leaf)
+    if (!($allfunctionfiles -eq $null)) {
+        foreach ($file in $allfunctionfiles) {
+            $parentfolder = Join-Path $FunctionTestsPath $file.Directory.Name
             $filename = "$($file.BaseName).Tests.ps1"
             if (!(Test-path $filename)) {
                 CreatePesterTestFile -Filename $filename -rootfolder $parentfolder
@@ -336,10 +335,10 @@ task CreateUpdatePesterTests {
         }
     }
 
-    if (!($testfiles -eq $null)) {
-        foreach ($file in $testfiles) {
+    if (!($FunctionTestFiles -eq $null)) {
+        foreach ($file in $FunctionTestFiles) {
             $cleanfunctionfilename = $file.BaseName -replace '\.Tests',''
-            if ($cleanfunctionfilename -notin $allfiles.basename) {
+            if ($cleanfunctionfilename -notin $allfunctionfiles.basename) {
                 $newfilename = $file.FullName -replace '\.ps1','.FileOrFunctionRemoved.ps1'
                 if (!(Test-Path $newfilename)) {
                     Rename-Item $file.FullName $newfilename -Force
